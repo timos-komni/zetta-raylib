@@ -14,7 +14,6 @@
 ********************************************************************************************/
 
 #include "raylib.h"
-#include <math.h>
 
 #define MAX_BUILDINGS   100
 
@@ -82,8 +81,7 @@ int main(void)
         else if (camera.rotation < -40) camera.rotation = -40;
 
         // Camera zoom controls
-        // Uses log scaling to provide consistent zoom speed
-        camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove()*0.1f));
+        camera.zoom += ((float)GetMouseWheelMove()*0.05f);
 
         if (camera.zoom > 3.0f) camera.zoom = 3.0f;
         else if (camera.zoom < 0.1f) camera.zoom = 0.1f;

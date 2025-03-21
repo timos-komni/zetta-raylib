@@ -128,6 +128,7 @@ ROOT = $(shell whoami)
 # By default we suppose we are working on Windows
 HOST_PLATFORM_OS ?= WINDOWS
 PLATFORM_OS ?= WINDOWS
+ZIG_PLATFORM_OS ?= windows
 
 # Determine PLATFORM_OS when required
 ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATFORM_DESKTOP_SDL PLATFORM_DESKTOP_RGFW PLATFORM_WEB PLATFORM_WEB_RGFW PLATFORM_ANDROID))
@@ -135,6 +136,7 @@ ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATF
     # ifeq ($(UNAME),Msys) -> Windows
     ifeq ($(OS),Windows_NT)
         PLATFORM_OS = WINDOWS
+        ZIG_PLATFORM_OS = windows
         ifndef PLATFORM_SHELL
             PLATFORM_SHELL = cmd
         endif
@@ -142,21 +144,27 @@ ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW PLATF
         UNAMEOS = $(shell uname)
         ifeq ($(UNAMEOS),Linux)
             PLATFORM_OS = LINUX
+            ZIG_PLATFORM_OS = linux
         endif
         ifeq ($(UNAMEOS),FreeBSD)
             PLATFORM_OS = BSD
+            ZIG_PLATFORM_OS = freebsd
         endif
         ifeq ($(UNAMEOS),OpenBSD)
             PLATFORM_OS = BSD
+            ZIG_PLATFORM_OS = openbsd
         endif
         ifeq ($(UNAMEOS),NetBSD)
             PLATFORM_OS = BSD
+            ZIG_PLATFORM_OS = netbsd
         endif
         ifeq ($(UNAMEOS),DragonFly)
             PLATFORM_OS = BSD
+            ZIG_PLATFORM_OS = dragonfly
         endif
         ifeq ($(UNAMEOS),Darwin)
             PLATFORM_OS = OSX
+            ZIG_PLATFORM_OS = macos
         endif
         ifndef PLATFORM_SHELL
             PLATFORM_SHELL = sh
@@ -167,6 +175,7 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DRM)
     UNAMEOS = $(shell uname)
     ifeq ($(UNAMEOS),Linux)
         PLATFORM_OS = LINUX
+        ZIG_PLATFORM_OS = linux
     endif
     ifndef PLATFORM_SHELL
         PLATFORM_SHELL = sh
@@ -269,6 +278,8 @@ endif
 CC = gcc
 AR = ar
 
+ZIG = zig
+
 ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
     ifeq ($(PLATFORM_OS),OSX)
         # OSX default compiler
@@ -327,6 +338,8 @@ endif
 #  -fno-strict-aliasing     jar_xm.h does shady stuff (breaks strict aliasing)
 CFLAGS = -Wall -D_GNU_SOURCE -D$(TARGET_PLATFORM) -D$(GRAPHICS) -Wno-missing-braces -Werror=pointer-arith -fno-strict-aliasing
 
+ZIG_FLAGS = build-obj --color on
+
 ifneq ($(RAYLIB_CONFIG_FLAGS), NONE)
     CFLAGS += -DEXTERNAL_CONFIG_FLAGS $(RAYLIB_CONFIG_FLAGS)
 endif
@@ -340,21 +353,26 @@ endif
 
 ifeq ($(PLATFORM_OS), LINUX)
     CFLAGS += -fPIC
+    ZIG_FLAGS += -fPIC
 endif
 
 ifeq ($(RAYLIB_BUILD_MODE),DEBUG)
     CFLAGS += -g -D_DEBUG
+    ZIG_FLAGS += -fno-strip
 endif
 
 ifeq ($(RAYLIB_BUILD_MODE),RELEASE)
     ifeq ($(TARGET_PLATFORM),$(filter $(TARGET_PLATFORM),PLATFORM_WEB PLATFORM_WEB_RGFW))
         CFLAGS += -Os
+        ZIG_FLAGS += -O ReleaseSmall
     endif
     ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
         CFLAGS += -O1
+        ZIG_FLAGS += -O ReleaseSafe
     endif
     ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
         CFLAGS += -O2
+        ZIG_FLAGS += -O ReleaseSafe
     endif
 endif
 
@@ -403,6 +421,7 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
     endif
     # Compilation functions attributes options
     CFLAGS += -ffunction-sections -funwind-tables -fstack-protector-strong -fPIE -fPIC
+    ZIG_FLAGS += -ffunction-sections -funwind-tables -fstack-protector -fPIE -FPIC
     # Compiler options for the linker
     # -Werror=format-security
     CFLAGS += -Wa,--noexecstack -Wformat -no-canonical-prefixes
@@ -416,6 +435,7 @@ ifeq ($(RAYLIB_LIBTYPE),SHARED)
     # BE CAREFUL: It seems that for gcc -fpic is not the same as -fPIC
     # MinGW32 just doesn't need -fPIC, it shows warnings
     CFLAGS += -fPIC -DBUILD_LIBTYPE_SHARED
+    ZIG_FLAGS += -fPIC
 
     # hide all symbols by default, so RLAPI can expose them
     ifeq ($(PLATFORM_OS),$(filter $(PLATFORM_OS), LINUX BSD OSX))
@@ -461,6 +481,7 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_DESKTOP_GLFW)
 endif
 
 CFLAGS += $(CUSTOM_CFLAGS)
+ZIG_FLAGS += $(CUSTOM_ZIG_FLAGS)
 
 # Define include paths for required headers: INCLUDE_PATHS
 # NOTE: Several external required libraries (stb and others)
@@ -659,6 +680,10 @@ ifeq ($(TARGET_PLATFORM),PLATFORM_ANDROID)
     OBJS += android_native_app_glue.o
 endif
 
+ZIG_OBJS = zutils.o
+
+OBJS += $(ZIG_OBJS)
+
 # Define processes to execute
 #------------------------------------------------------------------------------------------------
 # Default target entry
@@ -732,6 +757,9 @@ else
 endif
 
 # Compile all modules with their prerequisites
+
+zutils.o: zutils.zig
+	$(ZIG) $(ZIG_FLAGS) -lc -fcompiler-rt $(INCLUDE_PATHS) $<
 
 # Prerequisites of core module
 rcore.o : platforms/*.c

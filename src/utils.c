@@ -59,22 +59,26 @@
 //----------------------------------------------------------------------------------
 // Global Variables Definition
 //----------------------------------------------------------------------------------
-static int logTypeLevel = LOG_INFO;                 // Minimum log type level
+//static int logTypeLevel = LOG_INFO;                 // Minimum log type level
 
-static TraceLogCallback traceLog = NULL;            // TraceLog callback function pointer
+//static TraceLogCallback traceLog = NULL;            // TraceLog callback function pointer
 static LoadFileDataCallback loadFileData = NULL;    // LoadFileData callback function pointer
 static SaveFileDataCallback saveFileData = NULL;    // SaveFileText callback function pointer
 static LoadFileTextCallback loadFileText = NULL;    // LoadFileText callback function pointer
-static SaveFileTextCallback saveFileText = NULL;    // SaveFileText callback function pointer
+//static SaveFileTextCallback saveFileText = NULL;    // SaveFileText callback function pointer
+
+extern LoadFileDataCallback zig_loadFileData;    // LoadFileData callback function pointer
+extern SaveFileDataCallback zig_saveFileData;    // SaveFileText callback function pointer
+extern LoadFileTextCallback zig_loadFileText;    // LoadFileText callback function pointer
 
 //----------------------------------------------------------------------------------
 // Functions to set internal callbacks
 //----------------------------------------------------------------------------------
-void SetTraceLogCallback(TraceLogCallback callback) { traceLog = callback; }              // Set custom trace log
-void SetLoadFileDataCallback(LoadFileDataCallback callback) { loadFileData = callback; }  // Set custom file data loader
-void SetSaveFileDataCallback(SaveFileDataCallback callback) { saveFileData = callback; }  // Set custom file data saver
-void SetLoadFileTextCallback(LoadFileTextCallback callback) { loadFileText = callback; }  // Set custom file text loader
-void SetSaveFileTextCallback(SaveFileTextCallback callback) { saveFileText = callback; }  // Set custom file text saver
+//void SetTraceLogCallback(TraceLogCallback callback) { traceLog = callback; }              // Set custom trace log
+void SetLoadFileDataCallback(LoadFileDataCallback callback) { loadFileData = callback; zig_loadFileData = loadFileData; }  // Set custom file data loader
+void SetSaveFileDataCallback(SaveFileDataCallback callback) { saveFileData = callback; zig_saveFileData = saveFileData; }  // Set custom file data saver
+void SetLoadFileTextCallback(LoadFileTextCallback callback) { loadFileText = callback; zig_loadFileText = loadFileText; }  // Set custom file text loader
+//void SetSaveFileTextCallback(SaveFileTextCallback callback) { saveFileText = callback; }  // Set custom file text saver
 
 #if defined(PLATFORM_ANDROID)
 static AAssetManager *assetManager = NULL;          // Android assets manager pointer
@@ -99,10 +103,10 @@ static int android_close(void *cookie);
 //----------------------------------------------------------------------------------
 
 // Set the current threshold (minimum) log level
-void SetTraceLogLevel(int logType) { logTypeLevel = logType; }
+//void SetTraceLogLevel(int logType) { logTypeLevel = logType; }
 
 // Show trace log messages (LOG_INFO, LOG_WARNING, LOG_ERROR, LOG_DEBUG)
-void TraceLog(int logType, const char *text, ...)
+/*void TraceLog(int logType, const char *text, ...)
 {
 #if defined(SUPPORT_TRACELOG)
     // Message has level below current threshold, don't emit
@@ -155,28 +159,28 @@ void TraceLog(int logType, const char *text, ...)
     if (logType == LOG_FATAL) exit(EXIT_FAILURE);  // If fatal logging, exit program
 
 #endif  // SUPPORT_TRACELOG
-}
+}*/
 
 // Internal memory allocator
 // NOTE: Initializes to zero by default
-void *MemAlloc(unsigned int size)
+/*void *MemAlloc(unsigned int size)
 {
     void *ptr = RL_CALLOC(size, 1);
     return ptr;
-}
+}*/
 
 // Internal memory reallocator
-void *MemRealloc(void *ptr, unsigned int size)
+/*void *MemRealloc(void *ptr, unsigned int size)
 {
     void *ret = RL_REALLOC(ptr, size);
     return ret;
-}
+}*/
 
 // Internal memory free
-void MemFree(void *ptr)
+/*void MemFree(void *ptr)
 {
     RL_FREE(ptr);
-}
+}*/
 
 // Load data from file into a buffer
 unsigned char *LoadFileData(const char *fileName, int *dataSize)
@@ -245,10 +249,10 @@ unsigned char *LoadFileData(const char *fileName, int *dataSize)
 }
 
 // Unload file data allocated by LoadFileData()
-void UnloadFileData(unsigned char *data)
+/*void UnloadFileData(unsigned char *data)
 {
     RL_FREE(data);
-}
+}*/
 
 // Save data to file from buffer
 bool SaveFileData(const char *fileName, void *data, int dataSize)
@@ -399,13 +403,13 @@ char *LoadFileText(const char *fileName)
 }
 
 // Unload file text data allocated by LoadFileText()
-void UnloadFileText(char *text)
+/*void UnloadFileText(char *text)
 {
     RL_FREE(text);
-}
+}*/
 
 // Save text data to file (write), string must be '\0' terminated
-bool SaveFileText(const char *fileName, char *text)
+/*bool SaveFileText(const char *fileName, char *text)
 {
     bool success = false;
 
@@ -436,7 +440,7 @@ bool SaveFileText(const char *fileName, char *text)
     else TRACELOG(LOG_WARNING, "FILEIO: File name provided is not valid");
 
     return success;
-}
+}*/
 
 #if defined(PLATFORM_ANDROID)
 // Initialize asset manager from android app

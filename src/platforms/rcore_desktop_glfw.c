@@ -1741,7 +1741,7 @@ static void ErrorCallback(int error, const char *description)
 }
 
 // GLFW3 WindowSize Callback, runs when window is resizedLastFrame
-// NOTE: Window resizing not enabled by default, use SetConfigFlags()
+// NOTE: Window resizing not allowed by default
 static void WindowSizeCallback(GLFWwindow *window, int width, int height)
 {
     // Reset viewport and projection matrix for new size
@@ -1756,19 +1756,15 @@ static void WindowSizeCallback(GLFWwindow *window, int width, int height)
     // if we are doing automatic DPI scaling, then the "screen" size is divided by the window scale
     if (IsWindowState(FLAG_WINDOW_HIGHDPI))
     {
-        width = (int)(width/GetWindowScaleDPI().x);
-        height = (int)(height/GetWindowScaleDPI().y);
+        width = (int)(width / GetWindowScaleDPI().x);
+        height = (int)(height / GetWindowScaleDPI().y);
     }
-    
-    // Set render size
-    CORE.Window.render.width = width;
-    CORE.Window.render.height = height;
 
     // Set current screen size
     CORE.Window.screen.width = width;
     CORE.Window.screen.height = height;
 
-    // WARNING: If using a render texture, it is not scaled to new size
+    // NOTE: Postprocessing texture is not scaled to new size
 }
 static void WindowPosCallback(GLFWwindow* window, int x, int y)
 {
