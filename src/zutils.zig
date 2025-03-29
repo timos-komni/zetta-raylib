@@ -28,15 +28,16 @@ export var logTypeLevel: c_int = zutils_h.LOG_INFO;
 
 export var traceLog: zutils_h.TraceLogCallback = null;
 export var zig_loadFileData: [*c]zutils_h.LoadFileDataCallback = null;
-export var zig_saveFileData: [*c]zutils_h.SaveFileDataCallback = null;
+export var saveFileData: zutils_h.SaveFileDataCallback = null;
 export var zig_loadFileText: [*c]zutils_h.LoadFileTextCallback = null;
 export var saveFileText: zutils_h.SaveFileTextCallback = null;
 
 //----------------------------------------------------------------------------------
 // Functions to set internal callbacks
 //----------------------------------------------------------------------------------
-export fn SetTraceLogCallback(callback: zutils_h.TraceLogCallback) callconv(.C) void { traceLog = callback; }
-export fn SetSaveFileTextCallback(callback: zutils_h.SaveFileTextCallback) callconv(.C) void { saveFileText = callback; }
+export fn SetTraceLogCallback(callback: zutils_h.TraceLogCallback) callconv(.C) void { traceLog = callback; } // Set custom trace log
+export fn SetSaveFileDataCallback(callback: zutils_h.SaveFileDataCallback) callconv(.C) void { saveFileData = callback; } // Set custom file data saver
+export fn SetSaveFileTextCallback(callback: zutils_h.SaveFileTextCallback) callconv(.C) void { saveFileText = callback; } // Set custom file text saver
 
 // Set the current treshold (minimum) log level
 export fn SetTraceLogLevel(logType: c_int) callconv(.C) void { logTypeLevel = logType; }
@@ -111,8 +112,39 @@ export fn UnloadFileData(data: [*c]u8) callconv(.C) void {
 }
 
 // Save data to file from buffer
-// TODO bool SaveFileData(const char *fileName, void *data, int dataSize)
-pub extern fn SaveFileData(fileName: [*c]const u8, data: ?*anyopaque, dataSize: c_int) bool;
+export fn SaveFileData(fileName: [*c]const u8, data: ?*anyopaque, dataSize: c_int) bool {
+   var success: bool = false;
+
+   if (fileName != null) {
+      if (saveFileData != null) {
+         return saveFileData.?(fileName, data, dataSize);
+      }
+      if (comptime zutils_h.ZIG__SUPPORT_STANDARD_FILEIO == 1) {
+         const file: [*c]zutils_h.FILE = zutils_h.fopen(fileName, "wb");
+
+         if (file != null) {
+            const count: c_int = @truncate(@as(isize, @bitCast(zutils_h.fwrite(data, @sizeOf(u8), @intCast(dataSize), file))));
+
+            if (count == 0) {
+               TRACELOG(zutils_h.LOG_WARNING, "FILEIO: [%s] Failed to write file", fileName);
+            } else if (count != dataSize) {
+               TRACELOG(zutils_h.LOG_WARNING, "FILEIO: [%s] File partially written", fileName);
+            } else {
+               TRACELOG(zutils_h.LOG_INFO, "FILEIO: [%s] File saved successfully", fileName);
+            }
+
+            const result: c_int = zutils_h.fclose(file);
+            if (result == 0) success = true;
+         }
+      } else {
+         TRACELOG(zutils_h.LOG_WARNING, "FILEIO: Standard file io not supported, use custom file callback");
+      }
+   } else {
+      TRACELOG(zutils_h.LOG_WARNING, "FILEIO: File name provided is not valid");
+   }
+
+   return success;
+}
 
 // Export data to code (.h), returns true on success
 // TODO bool ExportDataAsCode(const unsigned char *data, int dataSize, const char *fileName)
@@ -129,7 +161,6 @@ export fn UnloadFileText(data: [*c]u8) callconv(.C) void {
 }
 
 // Save text data to file (write), string must be '\0' terminated
-// TODO bool SaveFileText(const char *fileName, char *text)
 export fn SaveFileText(fileName: [*c]const u8, text: [*c]u8) callconv(.C) bool {
    var success: bool = false;
 

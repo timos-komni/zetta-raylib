@@ -63,7 +63,7 @@
 
 //static TraceLogCallback traceLog = NULL;            // TraceLog callback function pointer
 static LoadFileDataCallback loadFileData = NULL;    // LoadFileData callback function pointer
-static SaveFileDataCallback saveFileData = NULL;    // SaveFileText callback function pointer
+//static SaveFileDataCallback saveFileData = NULL;    // SaveFileText callback function pointer
 static LoadFileTextCallback loadFileText = NULL;    // LoadFileText callback function pointer
 //static SaveFileTextCallback saveFileText = NULL;    // SaveFileText callback function pointer
 
@@ -76,7 +76,7 @@ extern LoadFileTextCallback zig_loadFileText;    // LoadFileText callback functi
 //----------------------------------------------------------------------------------
 //void SetTraceLogCallback(TraceLogCallback callback) { traceLog = callback; }              // Set custom trace log
 void SetLoadFileDataCallback(LoadFileDataCallback callback) { loadFileData = callback; zig_loadFileData = loadFileData; }  // Set custom file data loader
-void SetSaveFileDataCallback(SaveFileDataCallback callback) { saveFileData = callback; zig_saveFileData = saveFileData; }  // Set custom file data saver
+//void SetSaveFileDataCallback(SaveFileDataCallback callback) { saveFileData = callback; }  // Set custom file data saver
 void SetLoadFileTextCallback(LoadFileTextCallback callback) { loadFileText = callback; zig_loadFileText = loadFileText; }  // Set custom file text loader
 //void SetSaveFileTextCallback(SaveFileTextCallback callback) { saveFileText = callback; }  // Set custom file text saver
 
@@ -255,7 +255,7 @@ unsigned char *LoadFileData(const char *fileName, int *dataSize)
 }*/
 
 // Save data to file from buffer
-bool SaveFileData(const char *fileName, void *data, int dataSize)
+/*bool SaveFileData(const char *fileName, void *data, int dataSize)
 {
     bool success = false;
 
@@ -289,7 +289,7 @@ bool SaveFileData(const char *fileName, void *data, int dataSize)
     else TRACELOG(LOG_WARNING, "FILEIO: File name provided is not valid");
 
     return success;
-}
+}*/
 
 // Export data to code (.h), returns true on success
 bool ExportDataAsCode(const unsigned char *data, int dataSize, const char *fileName)
